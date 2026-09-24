@@ -18,6 +18,10 @@
 #                  'B' = ホワイトリスト方式（許可コマンドのみ）
 #   ssh_keys     : 登録する SSH 公開鍵のリスト（空なら登録なし）
 #   shell        : ログインシェル
+#   set_initial_password : true の場合、共通初期パスワード（実行時に
+#                  -e "demo_user_password=..." で渡す）を設定し、
+#                  初回ログイン時にパスワード変更を強制する。
+#                  ※ 平文はリポジトリに置かない運用（Public リポジトリ対策）。
 users:
   - name: qcsdemo
     comment: "QCS demo login user (restricted)"
@@ -26,6 +30,7 @@ users:
     sudo_policy: "A"        # 現在は方針A。将来 'B' に切り替え予定（デモログイン用のため要見直し）
     ssh_keys: []            # 例: ["ssh-ed25519 AAAA... comment"]
     shell: /bin/bash
+    set_initial_password: true
 
   - name: tisiadmin
     comment: "QCS demo administrator"
@@ -34,6 +39,7 @@ users:
     sudo_policy: "unrestricted"   # 制限なし（フル sudo）
     ssh_keys: []
     shell: /bin/bash
+    set_initial_password: true
 
 # -------------------------------------------------------------
 # sudo 方針の定義（方針A / 方針B の切り替えはユーザーの sudo_policy で行う）

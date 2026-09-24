@@ -72,9 +72,11 @@ sudo dnf install -y git ansible-core sshpass
 ### 認証方式
 
 - **SSH ログイン**: `admin` / **パスワード認証**
-  - 実行時に `-k`（`--ask-pass`）でパスワードを入力します（ファイルに保存しない運用）。
-- **sudo**: パスワード未設定のため、`-K`（sudo パスワード入力）は不要です。
-- パスワード認証には踏み台に **`sshpass`** が必要です（上記で導入済み）。
+  - 実行時に `-k`（`--ask-pass`）で SSH パスワードを入力します（ファイルに保存しない運用）。
+- **sudo（QCS ノード側）**: `admin` は `(ALL) ALL` だが **パスワードが必要**。
+  - root 昇格を伴う `site.yml` 実行時は `-K`（`--ask-become-pass`）も付けます。
+  - 疎通確認や情報収集など昇格不要な操作では `-e ansible_become=false` を使います。
+- パスワード認証には踏み台に **`sshpass`** が必要です（導入済み）。
 
 ```bash
 # リポジトリ取得後、必要コレクションを導入（初回のみ）
@@ -91,28 +93,56 @@ ansible-galaxy collection install -r requirements.yml
 
 ```bash
 cd qcs_labo/ansible
-ansible demo -m ping -k
+# 疎通確認は sudo 昇格が不要なため become を無効化して実行する
+ansible demo -m ping -k -e ansible_become=false
 ```
+
+> 補足: `ansible.cfg` で `become = True` を既定にしているため、
+> 単純な `ping` でも sudo 昇格が走り「Missing sudo password」になります。
+> 疎通確認では上記のように `-e ansible_become=false` を付けてください。
 
 ### 2. 構築（初期セットアップ）
 
+構築は各ノードで root 昇格（sudo）するため、`-k`（SSH）に加えて
+`-K`（sudo パスワード）も必要です。QCS ノードの `admin` は sudo に
+パスワードが必要なためです（`-k` と `-K` は同じパスワードのことが多いですが、
+プロンプトは 2 回出ます）。
+
+ユーザーの初期パスワードは平文をリポジトリに置かない運用のため、
+実行時に `-e "demo_user_password=..."` で渡します。
+
+> 以下の `<初期パスワード>` は実際の初期パスワードに置き換えて実行します。
+> パスワードそのものはリポジトリに記載しません（別途共有）。
+
 ```bash
 # ドライラン（変更内容の確認のみ）
-ansible-playbook site.yml --check -k
+ansible-playbook site.yml --check -k -K -e "demo_user_password=<初期パスワード>"
 
 # 実適用
-ansible-playbook site.yml -k
+ansible-playbook site.yml -k -K -e "demo_user_password=<初期パスワード>"
 
 # 一部だけ適用（例: ユーザーのみ）
-ansible-playbook site.yml --tags users -k
+ansible-playbook site.yml --tags users -k -K -e "demo_user_password=<初期パスワード>"
 ```
 
 利用可能なタグ: `common`, `users`, `selinux`, `packages`, `os_update`
 
+#### 初期パスワードの扱い
+
+- 対象: `all.yml` で `set_initial_password: true` のユーザー（現在は `qcsdemo` / `tisiadmin`）
+- パスワードは `password_hash('sha512')` でハッシュ化して設定します（平文保存しない）。
+- **初回ログイン時にパスワード変更が強制**されます（`chage -d 0`）。
+- 既存ユーザーにも設定されます（`update_password: always`）。そのため、
+  ユーザーが自分で変更した後に `--tags users` を再実行すると初期パスワードに戻る点に注意。
+- `demo_user_password` を渡さずに `--tags users` を実行すると、安全のため
+  assert で停止します。
+
 ### 3. 構成情報レポートの生成
 
+情報収集は読み取り中心のため sudo 昇格なしで実行します。
+
 ```bash
-ansible-playbook gather_info.yml -k
+ansible-playbook gather_info.yml -k -e ansible_become=false
 # 出力: docs/reports/<ホスト名>_構成情報.md
 ```
 

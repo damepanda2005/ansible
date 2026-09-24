@@ -95,15 +95,15 @@ ansible-galaxy collection install -r requirements.yml
 認証は `admin` / パスワード認証のため `-k` を付けます（sudo はパスワード未設定のため `-K` 不要）。
 
 ```bash
-# 接続確認
-ansible demo -m ping -k
+# 接続確認（昇格不要なので become 無効化）
+ansible demo -m ping -k -e ansible_become=false
 
-# 構築（ドライラン → 適用）
-ansible-playbook site.yml --check -k
-ansible-playbook site.yml -k
+# 構築（ドライラン → 適用）。QCS ノードの sudo はパスワード必須のため -K も付ける
+ansible-playbook site.yml --check -k -K
+ansible-playbook site.yml -k -K
 
-# 構成情報レポート生成
-ansible-playbook gather_info.yml -k
+# 構成情報レポート生成（読み取り中心なので昇格なし）
+ansible-playbook gather_info.yml -k -e ansible_become=false
 ```
 
 ## トラブルシューティング

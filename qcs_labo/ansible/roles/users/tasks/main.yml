@@ -4,7 +4,19 @@
 # ユーザー登録 + sudo 権限設定（方針A / 方針B / unrestricted）
 # =============================================================
 
-- name: ユーザーを作成する
+- name: 初期パスワードが変数で渡されているか確認する
+  ansible.builtin.assert:
+    that:
+      - demo_user_password is defined
+      - demo_user_password | length > 0
+    fail_msg: >-
+      初期パスワードが未指定です。実行時に -e "demo_user_password=..." を付けてください。
+      （平文をリポジトリに置かない運用のため、変数での受け渡しが必須です）
+    success_msg: "初期パスワードを受領しました。"
+  when: users | selectattr('set_initial_password', 'defined')
+         | selectattr('set_initial_password') | list | length > 0
+
+- name: ユーザーを作成する（初期パスワード設定を含む）
   ansible.builtin.user:
     name: "{{ item.name }}"
     comment: "{{ item.comment | default(omit) }}"
@@ -13,9 +25,26 @@
     shell: "{{ item.shell | default('/bin/bash') }}"
     create_home: true
     state: present
+    # set_initial_password が true のユーザーにのみ共通初期パスワードを設定。
+    # 平文はここでハッシュ化する（SHA-512）。
+    password: >-
+      {{ (demo_user_password | password_hash('sha512'))
+         if (item.set_initial_password | default(false)) else omit }}
+    # 既存ユーザーにも今回は必ず設定する（初回展開のため always）
+    update_password: "{{ 'always' if (item.set_initial_password | default(false)) else 'on_create' }}"
   loop: "{{ users }}"
   loop_control:
     label: "{{ item.name }}"
+  no_log: true   # パスワードハッシュをログに出さない
+
+- name: 初回ログイン時にパスワード変更を強制する（chage -d 0）
+  ansible.builtin.command: "chage -d 0 {{ item.name }}"
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.set_initial_password | default(false)
+  # chage は毎回 changed 扱いになるため、状態変化を抑制（冪等性のため）
+  changed_when: false
 
 - name: SSH 公開鍵を登録する
   ansible.posix.authorized_key:
