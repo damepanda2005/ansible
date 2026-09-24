@@ -4,8 +4,11 @@
 # 踏み台（制御ノード）で以下を実行して導入してください:
 #   ansible-galaxy collection install -r requirements.yml
 # =============================================================
+# 踏み台の ansible-core は 2.14 系のため、それと互換のあるバージョン範囲に
+# 固定しています。新しすぎるコレクションは ansible-core 2.15+ を要求し
+# 互換エラーになるため、上限を設けています。
 collections:
   - name: ansible.posix      # selinux, authorized_key モジュール用
-    version: ">=1.5.0"
+    version: ">=1.5.0,<2.0.0"
   - name: community.general  # 汎用モジュール（将来拡張用）
-    version: ">=8.0.0"
+    version: ">=7.0.0,<9.0.0"

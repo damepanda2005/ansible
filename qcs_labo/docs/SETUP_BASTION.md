@@ -46,6 +46,26 @@ sshpass -V
 `ansible --version` で `python version` が 3.x になっていることも確認してください
 （Rocky 9 は標準で python3）。
 
+### 確認済みの踏み台環境（参考）
+
+踏み台 `qcs-zabbix-proxy` での実測値:
+
+| ツール | バージョン |
+|--------|-----------|
+| git | 2.52.0 |
+| ansible-core | 2.14.18 |
+| sshpass | 1.09 |
+| python | 3.9.25 |
+
+> **重要**: `ansible --version` の `config file` が `/etc/ansible/ansible.cfg` と
+> 表示される場合、プロジェクトの設定が使われていません。
+> 本プロジェクトの `ansible.cfg` を有効にするため、コマンドは必ず
+> **`qcs_labo/ansible/` ディレクトリ内で実行** してください
+> （カレントディレクトリの `ansible.cfg` が優先されます）。
+>
+> なお `requirements.yml` は ansible-core 2.14 と互換のバージョン範囲に
+> 固定しています。新しすぎるコレクションは 2.15+ を要求するため注意してください。
+
 ## 4. リポジトリの取得
 
 ```bash
