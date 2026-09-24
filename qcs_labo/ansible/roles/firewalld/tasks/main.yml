@@ -1,0 +1,73 @@
+---
+# =============================================================
+# role: firewalld
+# firewalld を有効化し、必要なサービス/ポート/ICMP を許可する
+#   - iperf3: 5201/tcp, 5201/udp
+#   - ssh
+#   - ICMP(IPv4) echo-request（ping）
+#   - fio / stress-ng はローカル完結のためポート不要
+# =============================================================
+
+- name: firewalld を導入する
+  ansible.builtin.dnf:
+    name: firewalld
+    state: present
+  when: manage_firewalld | default(false)
+
+- name: firewalld を起動・自動起動有効化する
+  ansible.builtin.service:
+    name: firewalld
+    state: started
+    enabled: true
+  when: manage_firewalld | default(false)
+
+- name: 許可するサービスを設定する（永続 + 即時）
+  ansible.posix.firewalld:
+    zone: "{{ firewalld_zone | default('public') }}"
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ firewalld_services | default([]) }}"
+  loop_control:
+    label: "service={{ item }}"
+  when: manage_firewalld | default(false)
+
+- name: 許可するポートを設定する（永続 + 即時）
+  ansible.posix.firewalld:
+    zone: "{{ firewalld_zone | default('public') }}"
+    port: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ firewalld_ports | default([]) }}"
+  loop_control:
+    label: "port={{ item }}"
+  when: manage_firewalld | default(false)
+
+# ICMP(IPv4) echo-request（ping）の許可。
+# firewalld は既定でブロックしていない ICMP は通すため、
+# echo-request の block を明示的に解除して許可を担保する。
+- name: ICMP echo-request（ping/IPv4）を許可する
+  ansible.posix.firewalld:
+    zone: "{{ firewalld_zone | default('public') }}"
+    icmp_block: echo-request
+    permanent: true
+    immediate: true
+    state: disabled
+  when:
+    - manage_firewalld | default(false)
+    - firewalld_allow_icmp_echo | default(false)
+
+- name: 現在の firewalld 設定（有効サービス/ポート）を取得する
+  ansible.builtin.command: "firewall-cmd --zone={{ firewalld_zone | default('public') }} --list-all"
+  register: fw_listing
+  changed_when: false
+  when: manage_firewalld | default(false)
+
+- name: firewalld 設定内容を表示する
+  ansible.builtin.debug:
+    var: fw_listing.stdout_lines
+  when:
+    - manage_firewalld | default(false)
+    - fw_listing is defined

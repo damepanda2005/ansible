@@ -89,6 +89,24 @@ os_update: true
 reboot_if_required: false
 
 # -------------------------------------------------------------
+# 5) firewalld（必要なポート/サービスの許可）
+# -------------------------------------------------------------
+# firewalld を有効化・起動し、以下を許可する。
+#   - iperf3 のみネットワーク通信あり（5201/tcp, 5201/udp）
+#   - fio / stress-ng はローカル完結のためポート不要
+manage_firewalld: true
+firewalld_zone: public
+# 許可するサービス（firewalld 定義済みサービス名）
+firewalld_services:
+  - ssh
+# 許可するポート（iperf3 用）
+firewalld_ports:
+  - 5201/tcp
+  - 5201/udp
+# ICMP（IPv4 の ping = echo-request）を許可するか
+firewalld_allow_icmp_echo: true
+
+# -------------------------------------------------------------
 # メタ情報（Excel パラメータシートのヘッダに使用）
 # -------------------------------------------------------------
 project_meta:

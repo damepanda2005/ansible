@@ -213,6 +213,32 @@ def build_system(wb, data):
         r += 1
 
     r += 1
+    section_title(ws, r, "firewalld（ポート/ICMP 許可）", ncols)
+    r += 1
+    put_row(ws, r, ["項目", "値", "備考"])
+    style_header_row(ws, r, ncols)
+    r += 1
+    put_row(ws, r, ["firewalld 管理", "有効" if data.get("manage_firewalld") else "無効",
+                    "firewalld の導入・起動・許可設定"])
+    r += 1
+    put_row(ws, r, ["ゾーン", data.get("firewalld_zone", "-"), ""])
+    r += 1
+    for svc in data.get("firewalld_services", []) or []:
+        put_row(ws, r, ["許可サービス", svc, "ssh 等"])
+        r += 1
+    port_notes = {
+        "5201/tcp": "iperf3（TCP）",
+        "5201/udp": "iperf3（UDP）",
+    }
+    for port in data.get("firewalld_ports", []) or []:
+        put_row(ws, r, ["許可ポート", port, port_notes.get(port, "")])
+        r += 1
+    put_row(ws, r, ["ICMP(IPv4) ping",
+                    "許可" if data.get("firewalld_allow_icmp_echo") else "許可しない",
+                    "echo-request。fio/stress-ng はポート不要"])
+    r += 1
+
+    r += 1
     section_title(ws, r, "OS 最新化", ncols)
     r += 1
     put_row(ws, r, ["項目", "値", "備考"])

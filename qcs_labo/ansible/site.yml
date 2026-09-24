@@ -7,7 +7,8 @@
 #   2) users      : ユーザー登録 + sudo 設定（方針A/B/unrestricted）
 #   3) selinux    : SELinux 状態設定（既定 disabled）
 #   4) packages   : 指定パッケージ導入（iperf3/fio/stress-ng + EPEL）
-#   5) os_update  : OS 最新化（dnf update）
+#   5) firewalld  : 必要ポート許可（ssh, iperf3 5201/tcp・udp, ICMP ping）
+#   6) os_update  : OS 最新化（dnf update）
 #
 # 実行例（踏み台 = 制御ノードで）:
 #   ansible-galaxy collection install -r requirements.yml
@@ -33,6 +34,9 @@
 
     - role: packages
       tags: ["packages"]
+
+    - role: firewalld
+      tags: ["firewalld", "firewall"]
 
     - role: os_update
       tags: ["os_update", "update"]

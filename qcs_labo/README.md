@@ -18,7 +18,9 @@ QCS（クラウド基盤）上に構築した **Rocky Linux 9** のデモ環境�
    - `tisiadmin`（管理用 / フル sudo）
 2. **SELinux 停止**（永続 `disabled`。再起動後に完全反映）
 3. **パッケージ導入**（`iperf3`, `fio`, `stress-ng`。`stress-ng` 用に EPEL 有効化）
-4. **OS 最新化**（`dnf update`。必要に応じ再起動要否を判定）
+4. **firewalld 設定**（`ssh` / iperf3 `5201/tcp`・`5201/udp` / ICMP(IPv4) ping を許可。
+   fio・stress-ng はローカル完結のためポート不要）
+5. **OS 最新化**（`dnf update`。必要に応じ再起動要否を判定）
 
 すべての設定値は [`ansible/group_vars/all.yml`](ansible/group_vars/all.yml) に集約しています
 （設定値の唯一のソース）。
@@ -42,6 +44,7 @@ qcs_labo/
 │       ├── users/                   ← ユーザー登録 + sudo 設定
 │       ├── selinux/                 ← SELinux 設定
 │       ├── packages/                ← パッケージ導入（EPEL 含む）
+│       ├── firewalld/               ← firewalld でポート/ICMP 許可
 │       ├── os_update/               ← OS 最新化
 │       └── gather_info/             ← 構成情報収集 + MD レポート生成
 └── docs/
@@ -125,7 +128,7 @@ ansible-playbook site.yml -k -K -e "demo_user_password=<初期パスワード>"
 ansible-playbook site.yml --tags users -k -K -e "demo_user_password=<初期パスワード>"
 ```
 
-利用可能なタグ: `common`, `users`, `selinux`, `packages`, `os_update`
+利用可能なタグ: `common`, `users`, `selinux`, `packages`, `firewalld`, `os_update`
 
 #### 初期パスワードの扱い
 
