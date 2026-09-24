@@ -1,0 +1,24 @@
+---
+# =============================================================
+# role: common
+# 事前確認・共通処理（OS 判定など）
+# =============================================================
+
+- name: 対象 OS が Rocky Linux 9 系であることを確認する
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Rocky'
+      - ansible_facts['distribution_major_version'] == '9'
+    fail_msg: >-
+      このプレイブックは Rocky Linux 9 系を対象としています。
+      検出: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}
+    success_msg: "OS 確認 OK: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}"
+
+- name: 適用対象の概要を表示する
+  ansible.builtin.debug:
+    msg:
+      - "ホスト: {{ inventory_hostname }}"
+      - "登録ユーザー: {{ users | map(attribute='name') | join(', ') }}"
+      - "SELinux: {{ selinux_state }}"
+      - "パッケージ: {{ packages | join(', ') }} (EPEL={{ enable_epel }})"
+      - "OS 最新化: {{ os_update }}"

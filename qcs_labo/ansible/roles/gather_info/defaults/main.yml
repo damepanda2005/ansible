@@ -1,0 +1,4 @@
+---
+# gather_info ロールの既定値
+# レポート出力先（制御ノード上のパス）。playbook のあるディレクトリからの相対を想定。
+report_dir: "{{ playbook_dir }}/../docs/reports"

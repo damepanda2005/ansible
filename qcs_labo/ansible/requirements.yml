@@ -1,0 +1,11 @@
+---
+# =============================================================
+# 必要な Ansible コレクション
+# 踏み台（制御ノード）で以下を実行して導入してください:
+#   ansible-galaxy collection install -r requirements.yml
+# =============================================================
+collections:
+  - name: ansible.posix      # selinux, authorized_key モジュール用
+    version: ">=1.5.0"
+  - name: community.general  # 汎用モジュール（将来拡張用）
+    version: ">=8.0.0"

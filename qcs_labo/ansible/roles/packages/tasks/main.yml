@@ -1,0 +1,23 @@
+---
+# =============================================================
+# role: packages
+# 指定パッケージの導入（必要に応じて EPEL を有効化）
+#   iperf3, fio  -> AppStream（標準）
+#   stress-ng    -> EPEL が必要
+# =============================================================
+
+- name: EPEL リポジトリを有効化する
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+  when: enable_epel | default(false)
+
+- name: 指定パッケージを導入する
+  ansible.builtin.dnf:
+    name: "{{ packages }}"
+    state: present
+  register: pkg_result
+
+- name: 導入結果を表示する
+  ansible.builtin.debug:
+    msg: "導入対象パッケージ: {{ packages | join(', ') }}"

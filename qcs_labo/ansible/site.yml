@@ -1,0 +1,38 @@
+---
+# =============================================================
+# QCS Labo - Rocky Linux 9 デモ環境 構築プレイブック
+# -------------------------------------------------------------
+# 実行順:
+#   1) common     : OS 確認・概要表示
+#   2) users      : ユーザー登録 + sudo 設定（方針A/B/unrestricted）
+#   3) selinux    : SELinux 状態設定（既定 disabled）
+#   4) packages   : 指定パッケージ導入（iperf3/fio/stress-ng + EPEL）
+#   5) os_update  : OS 最新化（dnf update）
+#
+# 実行例（踏み台 = 制御ノードで）:
+#   ansible-galaxy collection install -r requirements.yml
+#   ansible-playbook site.yml
+#   ansible-playbook site.yml --check          # ドライラン
+#   ansible-playbook site.yml --tags users     # 一部だけ適用
+# =============================================================
+
+- name: QCS デモ環境 構築（Rocky Linux 9）
+  hosts: demo
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: common
+      tags: ["common"]
+
+    - role: users
+      tags: ["users"]
+
+    - role: selinux
+      tags: ["selinux"]
+
+    - role: packages
+      tags: ["packages"]
+
+    - role: os_update
+      tags: ["os_update", "update"]

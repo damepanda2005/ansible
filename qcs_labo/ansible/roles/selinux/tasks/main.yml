@@ -1,0 +1,25 @@
+---
+# =============================================================
+# role: selinux
+# SELinux の状態を設定する（デモ既定: disabled）
+# =============================================================
+
+- name: 現在の SELinux 状態を取得する
+  ansible.builtin.command: getenforce
+  register: selinux_current
+  changed_when: false
+  failed_when: false
+
+- name: SELinux を設定する（{{ selinux_state }}）
+  ansible.posix.selinux:
+    state: "{{ selinux_state }}"
+  register: selinux_result
+  when: selinux_state in ['enforcing', 'permissive', 'disabled']
+
+- name: SELinux 設定変更にともなう再起動の要否を通知する
+  ansible.builtin.debug:
+    msg: >-
+      SELinux を '{{ selinux_state }}' に設定しました。
+      'disabled'/'enforcing' への切り替えは再起動後に完全反映されます。
+      現在の実行時状態: {{ selinux_current.stdout | default('unknown') }}
+  when: selinux_result is defined and selinux_result.changed | default(false)

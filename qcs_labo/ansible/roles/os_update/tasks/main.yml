@@ -1,0 +1,38 @@
+---
+# =============================================================
+# role: os_update
+# OS 最新化（dnf update）と、必要に応じた再起動
+# =============================================================
+
+- name: 全パッケージを最新化する（dnf update）
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+  register: update_result
+  when: os_update | default(false)
+
+- name: 再起動が必要か確認する（dnf needs-restarting）
+  ansible.builtin.command: dnf needs-restarting -r
+  register: needs_restarting
+  changed_when: false
+  failed_when: false
+  when: os_update | default(false)
+
+- name: 再起動を実施する（reboot_if_required=true かつ 要再起動の場合）
+  ansible.builtin.reboot:
+    msg: "Ansible による OS 最新化にともなう再起動"
+    reboot_timeout: 600
+  when:
+    - os_update | default(false)
+    - reboot_if_required | default(false)
+    - needs_restarting.rc is defined
+    - needs_restarting.rc == 1
+
+- name: 再起動が推奨される場合の通知（自動再起動しない設定のとき）
+  ansible.builtin.debug:
+    msg: "カーネル等の更新により再起動が推奨されます。手動での再起動を検討してください。"
+  when:
+    - os_update | default(false)
+    - not (reboot_if_required | default(false))
+    - needs_restarting.rc is defined
+    - needs_restarting.rc == 1

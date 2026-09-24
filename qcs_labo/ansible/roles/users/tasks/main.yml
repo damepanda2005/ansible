@@ -1,0 +1,48 @@
+---
+# =============================================================
+# role: users
+# ユーザー登録 + sudo 権限設定（方針A / 方針B / unrestricted）
+# =============================================================
+
+- name: ユーザーを作成する
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    comment: "{{ item.comment | default(omit) }}"
+    groups: "{{ item.groups | default([]) }}"
+    append: true
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    create_home: true
+    state: present
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: SSH 公開鍵を登録する
+  ansible.posix.authorized_key:
+    user: "{{ item.0.name }}"
+    key: "{{ item.1 }}"
+    state: present
+  loop: "{{ users | subelements('ssh_keys', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.0.name }}"
+  when: item.1 | length > 0
+
+# -------------------------------------------------------------
+# sudoers 定義（ユーザーごとに /etc/sudoers.d/<user> を配置）
+#   - unrestricted : フル sudo
+#   - A            : ブロックリスト方式（denied_commands を除外）
+#   - B            : ホワイトリスト方式（allowed_commands のみ許可）
+# validate で構文チェックしてから配置する（壊れた sudoers を防ぐ）
+# -------------------------------------------------------------
+- name: sudoers 定義を配置する
+  ansible.builtin.template:
+    src: sudoers_user.j2
+    dest: "/etc/sudoers.d/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }} (policy={{ item.sudo_policy | default('none') }})"
+  when: item.sudo | default(false)

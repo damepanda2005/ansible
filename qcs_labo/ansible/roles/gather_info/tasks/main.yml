@@ -1,0 +1,53 @@
+---
+# =============================================================
+# role: gather_info
+# 対象サーバの構成情報を収集し、制御ノード上に Markdown レポートを出力する
+# =============================================================
+
+- name: 導入パッケージの状態を取得する（rpm -q）
+  ansible.builtin.command: "rpm -q {{ item }}"
+  loop: "{{ packages }}"
+  register: pkg_status
+  changed_when: false
+  failed_when: false
+
+- name: SELinux の実行時状態を取得する
+  ansible.builtin.command: getenforce
+  register: selinux_runtime
+  changed_when: false
+  failed_when: false
+
+- name: uptime を取得する
+  ansible.builtin.command: uptime -p
+  register: uptime_out
+  changed_when: false
+  failed_when: false
+
+- name: 稼働中サービス（一部）を取得する
+  ansible.builtin.shell: >-
+    systemctl list-units --type=service --state=running --no-legend --no-pager
+    | awk '{print $1}'
+  register: running_services
+  changed_when: false
+  failed_when: false
+
+- name: レポート出力先ディレクトリを制御ノード側に作成する
+  ansible.builtin.file:
+    path: "{{ report_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  run_once: true
+  become: false
+
+- name: Markdown 構成情報レポートを生成する
+  ansible.builtin.template:
+    src: report.md.j2
+    dest: "{{ report_dir }}/{{ inventory_hostname }}_構成情報.md"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+
+- name: 生成したレポートのパスを表示する
+  ansible.builtin.debug:
+    msg: "レポートを生成しました: {{ report_dir }}/{{ inventory_hostname }}_構成情報.md"

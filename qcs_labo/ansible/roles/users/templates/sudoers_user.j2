@@ -1,0 +1,23 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+# =============================================================
+# {{ item.name }} 用 sudoers 定義
+# このファイルは Ansible が管理します。手動編集しないでください。
+# sudo_policy: {{ item.sudo_policy | default('none') }}
+# =============================================================
+{% if item.sudo_policy == 'unrestricted' %}
+# --- 方針: 制限なし（フル sudo）---
+{{ item.name }} ALL=(ALL) ALL
+{% elif item.sudo_policy == 'A' %}
+# --- 方針A: ブロックリスト方式 ---
+# 指定コマンドを禁止しつつ、それ以外は許可する。
+# ※ sudo -i / sudo bash 等の抜け道は残るためデモ用途向け。
+Cmnd_Alias DENIED_{{ item.name | upper }} = {{ sudo_policies.A.denied_commands | join(', ') }}
+{{ item.name }} ALL=(ALL) ALL, !DENIED_{{ item.name | upper }}
+{% elif item.sudo_policy == 'B' %}
+# --- 方針B: ホワイトリスト方式 ---
+# 指定コマンドのみ許可する。それ以外は不可。
+Cmnd_Alias ALLOWED_{{ item.name | upper }} = {{ sudo_policies.B.allowed_commands | join(', ') }}
+{{ item.name }} ALL=(ALL) ALLOWED_{{ item.name | upper }}
+{% else %}
+# sudo_policy が未定義のため sudo 権限は付与しません。
+{% endif %}
