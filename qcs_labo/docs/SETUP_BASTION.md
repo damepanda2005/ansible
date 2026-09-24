@@ -1,0 +1,104 @@
+# 踏み台サーバ セットアップ手順（Rocky Linux 9.6）
+
+踏み台サーバを **Ansible 制御ノード** として使うための初期セットアップ手順です。
+Git・Ansible・sshpass を導入し、本リポジトリを取得して実行できる状態にします。
+
+対象踏み台 OS: **Rocky Linux 9.6**
+
+> パッケージはいずれも dnf の標準／EPEL リポジトリから最新版を導入します。
+> バージョン指定は不要です。
+
+## 1. リポジトリの有効化（EPEL）
+
+`ansible-core` や `sshpass` は EPEL リポジトリを利用します。
+
+```bash
+sudo dnf install -y epel-release
+sudo dnf makecache
+```
+
+## 2. Git / Ansible / sshpass の導入
+
+```bash
+# まとめて導入
+sudo dnf install -y git ansible-core sshpass
+```
+
+| パッケージ | 用途 |
+|-----------|------|
+| `git` | リポジトリの取得（clone / pull） |
+| `ansible-core` | Ansible 本体（プレイブック実行） |
+| `sshpass` | パスワード認証での SSH 接続に必要 |
+
+> 備考: `ansible-core` は最小構成の本体です。多数の同梱コレクションが欲しい場合は
+> 代わりに `sudo dnf install -y ansible` を使う選択肢もありますが、
+> 本プロジェクトは `requirements.yml` で必要コレクションを明示導入するため
+> `ansible-core` で十分です。
+
+## 3. バージョン確認
+
+```bash
+git --version
+ansible --version
+sshpass -V
+```
+
+`ansible --version` で `python version` が 3.x になっていることも確認してください
+（Rocky 9 は標準で python3）。
+
+## 4. リポジトリの取得
+
+```bash
+# 任意の作業ディレクトリで
+git clone <リポジトリURL>
+cd <repo>/qcs_labo/ansible
+```
+
+更新を取り込むときは：
+
+```bash
+cd <repo>
+git pull
+```
+
+## 5. 必要な Ansible コレクションの導入
+
+本プロジェクトは `ansible.posix` / `community.general` を使用します。
+
+```bash
+cd <repo>/qcs_labo/ansible
+ansible-galaxy collection install -r requirements.yml
+```
+
+## 6. 接続確認 → 実行
+
+認証は `admin` / パスワード認証のため `-k` を付けます（sudo はパスワード未設定のため `-K` 不要）。
+
+```bash
+# 接続確認
+ansible demo -m ping -k
+
+# 構築（ドライラン → 適用）
+ansible-playbook site.yml --check -k
+ansible-playbook site.yml -k
+
+# 構成情報レポート生成
+ansible-playbook gather_info.yml -k
+```
+
+## トラブルシューティング
+
+- **`ansible` コマンドが見つからない**
+  `ansible-core` が入っているか確認（`dnf list installed ansible-core`）。
+  pip 導入した場合は `~/.local/bin` に PATH を通す。
+
+- **パスワード認証で `sshpass` 関連のエラー**
+  `sshpass` が未導入の可能性。手順2で導入する。
+
+- **初回接続で host key の確認を求められる／失敗する**
+  本プロジェクトは `inventory` と `ansible.cfg` でホストキー確認を無効化済み。
+  それでも出る場合は `~/.ssh/known_hosts` の該当ホスト行を削除して再実行。
+
+- **`epel-release` が見つからない**
+  `sudo dnf install -y epel-release` の前に
+  `sudo dnf install -y dnf-plugins-core` を実行し、リポジトリ状態を確認する。

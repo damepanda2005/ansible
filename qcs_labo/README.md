@@ -46,14 +46,27 @@ qcs_labo/
 │       └── gather_info/             ← 構成情報収集 + MD レポート生成
 └── docs/
     ├── generate_param_sheet.py      ← Excel パラメータシート生成スクリプト
+    ├── SETUP_BASTION.md             ← 踏み台セットアップ手順（Git/Ansible/sshpass）
     ├── SUDO_POLICY.md               ← sudo 方針 A→B 移行手順
     └── reports/                     ← 収集した構成情報レポート（自動生成）
 ```
 
 ## 前提（踏み台 = 制御ノード側）
 
-- Ansible がインストールされていること
-- 対象サーバ（QCS ノード）へ SSH 接続できること
+踏み台サーバ（Rocky Linux 9.6）に **Git / Ansible / sshpass** を導入し、
+本リポジトリを clone できる状態にしておきます。
+初回セットアップの手順は [`docs/SETUP_BASTION.md`](docs/SETUP_BASTION.md) を参照してください。
+
+要点だけ抜粋（Rocky Linux 9.6）:
+
+```bash
+# EPEL 有効化
+sudo dnf install -y epel-release
+# Git / Ansible 本体 / sshpass を導入
+sudo dnf install -y git ansible-core sshpass
+```
+
+- 対象サーバ（QCS ノード）へ踏み台から SSH 接続できること
 - Python3（Rocky 9 は標準搭載）
 
 ### 認証方式
@@ -61,16 +74,10 @@ qcs_labo/
 - **SSH ログイン**: `admin` / **パスワード認証**
   - 実行時に `-k`（`--ask-pass`）でパスワードを入力します（ファイルに保存しない運用）。
 - **sudo**: パスワード未設定のため、`-K`（sudo パスワード入力）は不要です。
-- パスワード認証には踏み台に **`sshpass`** が必要です。未導入なら次で導入します。
+- パスワード認証には踏み台に **`sshpass`** が必要です（上記で導入済み）。
 
 ```bash
-# sshpass の導入（Rocky/RHEL 系。EPEL が必要な場合あり）
-sudo dnf install -y epel-release
-sudo dnf install -y sshpass
-```
-
-```bash
-# 必要コレクションの導入（初回のみ）
+# リポジトリ取得後、必要コレクションを導入（初回のみ）
 cd qcs_labo/ansible
 ansible-galaxy collection install -r requirements.yml
 ```
